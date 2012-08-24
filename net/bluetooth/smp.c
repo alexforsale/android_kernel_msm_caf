@@ -770,6 +770,7 @@ invalid_key:
 	return 0;
 }
 
+<<<<<<< HEAD
 void start_pairing_req(struct hci_conn *hcon)
 {
 	__u8 authreq;
@@ -798,6 +799,12 @@ void start_pairing_req(struct hci_conn *hcon)
 int smp_conn_security(struct l2cap_conn *conn, __u8 sec_level)
 {
 	struct hci_conn *hcon = conn->hcon;
+=======
+int smp_conn_security(struct hci_conn *hcon, __u8 sec_level)
+{
+	struct l2cap_conn *conn = hcon->l2cap_data;
+	struct smp_chan *smp = conn->smp_chan;
+>>>>>>> Bluetooth: Change signature of smp_conn_security()
 	__u8 authreq;
 
 	BT_DBG("conn %p hcon %p %d req: %d",
