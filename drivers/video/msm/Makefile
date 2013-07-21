@@ -173,6 +173,11 @@ obj-$(CONFIG_FB_MSM_LCDC_TRULY_HVGA_IPS3P2335) += lcdc_truly_ips3p2335.o
 
 obj-y += hdcp_tx.o
 
+##################################
+# Lcd driver for Samsung Project #
+##################################
+obj-$(CONFIG_FB_MSM_LCDC_JENA_HVGA) += lcdc_jena.o lcdc_backlight_ic.o
+
 obj-$(CONFIG_FB_MSM_TVOUT) += tvout_msm.o
 
 ccflags-y := -I$(src)/mhl
