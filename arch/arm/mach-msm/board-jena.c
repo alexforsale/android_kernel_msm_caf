@@ -70,6 +70,7 @@
 
 #define _CONFIG_MACH_JENA // Temporary flag
 #define _CONFIG_MACH_TREBON // Temporary flag
+#define ADSP_RPC_PROG           0x3000000a
 
 #define PMEM_KERNEL_EBI1_SIZE	0x3A000
 #define MSM_PMEM_AUDIO_SIZE	0x1F4000 //0x5B000
@@ -2296,8 +2297,7 @@ out:
 
 #define GPIO_SDC1_HW_DET 94
 
-#if defined(CONFIG_MMC_MSM_SDC1_SUPPORT) \
-	&& defined(CONFIG_MMC_MSM_CARD_HW_DETECTION)
+#if defined(CONFIG_MMC_MSM_SDC1_SUPPORT)
 static unsigned int msm7x2xa_sdcc_slot_status(struct device *dev)
 {
 	int status;
@@ -2335,11 +2335,9 @@ static struct mmc_platform_data sdc1_plat_data = {
 	.msmsdcc_fmin	= 144000,
 	.msmsdcc_fmid	= 24576000,
 	.msmsdcc_fmax	= 49152000,
-#ifdef CONFIG_MMC_MSM_CARD_HW_DETECTION
 	.status      = msm7x2xa_sdcc_slot_status,
 	.status_irq  = MSM_GPIO_TO_INT(GPIO_SDC1_HW_DET),
 	.irq_flags   = IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
-#endif
 };
 #endif
 
@@ -2357,9 +2355,7 @@ static struct mmc_platform_data sdc2_plat_data = {
 	.status = wlan_status,
 	.register_status_notify = register_wlan_status_notify,
 #endif /* ATH_POLLING */
-#ifdef CONFIG_MMC_MSM_SDIO_SUPPORT
 	.sdiowakeup_irq = MSM_GPIO_TO_INT(66),
-#endif /* CONFIG_MMC_MSM_SDIO_SUPPORT */
 	.msmsdcc_fmin	= 144000,
 	.msmsdcc_fmid	= 24576000,
 	.msmsdcc_fmax	= 49152000, //24576000, ///*144000,//*/
@@ -2406,7 +2402,7 @@ static struct msm_serial_hs_platform_data msm_uart_dm1_pdata = {
 #endif
 
 static struct msm_pm_platform_data msm7x27a_pm_data[MSM_PM_SLEEP_MODE_NR] = {
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE] = {
+	[MSM_PM_MODE(0, MSM_PM_SLEEP_MODE_POWER_COLLAPSE)] = {
 					.idle_supported = 1,
 					.suspend_supported = 1,
 					.idle_enabled = 1,
@@ -2414,7 +2410,7 @@ static struct msm_pm_platform_data msm7x27a_pm_data[MSM_PM_SLEEP_MODE_NR] = {
 					.latency = 16000,
 					.residency = 20000,
 	},
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE_NO_XO_SHUTDOWN] = {
+	[MSM_PM_MODE(0, MSM_PM_SLEEP_MODE_POWER_COLLAPSE_NO_XO_SHUTDOWN)] = {
 					.idle_supported = 1,
 					.suspend_supported = 1,
 					.idle_enabled = 1,
@@ -2422,7 +2418,7 @@ static struct msm_pm_platform_data msm7x27a_pm_data[MSM_PM_SLEEP_MODE_NR] = {
 					.latency = 12000,
 					.residency = 20000,
 	},
-	[MSM_PM_SLEEP_MODE_RAMP_DOWN_AND_WAIT_FOR_INTERRUPT] = {
+	[MSM_PM_MODE(0, MSM_PM_SLEEP_MODE_RAMP_DOWN_AND_WAIT_FOR_INTERRUPT)] = {
 					.idle_supported = 1,
 					.suspend_supported = 1,
 					.idle_enabled = 0,
@@ -2430,7 +2426,7 @@ static struct msm_pm_platform_data msm7x27a_pm_data[MSM_PM_SLEEP_MODE_NR] = {
 					.latency = 2000,
 					.residency = 0,
 	},
-	[MSM_PM_SLEEP_MODE_WAIT_FOR_INTERRUPT] = {
+	[MSM_PM_MODE(0, MSM_PM_SLEEP_MODE_WAIT_FOR_INTERRUPT)] = {
 					.idle_supported = 1,
 					.suspend_supported = 1,
 					.idle_enabled = 1,
@@ -2439,26 +2435,6 @@ static struct msm_pm_platform_data msm7x27a_pm_data[MSM_PM_SLEEP_MODE_NR] = {
 					.residency = 0,
 	},
 };
-
-u32 msm7627a_power_collapse_latency(enum msm_pm_sleep_mode mode)
-{
-	switch (mode) {
-	case MSM_PM_SLEEP_MODE_POWER_COLLAPSE:
-		return msm7x27a_pm_data
-		[MSM_PM_SLEEP_MODE_POWER_COLLAPSE].latency;
-	case MSM_PM_SLEEP_MODE_POWER_COLLAPSE_NO_XO_SHUTDOWN:
-		return msm7x27a_pm_data
-		[MSM_PM_SLEEP_MODE_POWER_COLLAPSE_NO_XO_SHUTDOWN].latency;
-	case MSM_PM_SLEEP_MODE_RAMP_DOWN_AND_WAIT_FOR_INTERRUPT:
-		return msm7x27a_pm_data
-		[MSM_PM_SLEEP_MODE_RAMP_DOWN_AND_WAIT_FOR_INTERRUPT].latency;
-	case MSM_PM_SLEEP_MODE_WAIT_FOR_INTERRUPT:
-		return msm7x27a_pm_data
-		[MSM_PM_SLEEP_MODE_WAIT_FOR_INTERRUPT].latency;
-	default:
-		return 0;
-	}
-}
 
 static struct msm_pm_boot_platform_data msm_pm_boot_pdata __initdata = {
 	.mode = MSM_PM_BOOT_CONFIG_RESET_VECTOR_PHYS,
@@ -3095,19 +3071,19 @@ static void msm_camera_vreg_config(int vreg_en)
 
 static int config_gpio_table(uint32_t *table, int len)
 {
-	int rc = 0, i = 0;
+        int rc = 0, i = 0;
 
-	for (i = 0; i < len; i++) {
-		rc = gpio_tlmm_config(table[i], GPIO_CFG_ENABLE);
-		if (rc) {
-			pr_err("%s not able to get gpio\n", __func__);
-			for (i--; i >= 0; i--)
-				gpio_tlmm_config(camera_off_gpio_table[i],
-							GPIO_CFG_ENABLE);
-			break;
-		}
-	}
-	return rc;
+        for (i = 0; i < len; i++) {
+                rc = gpio_tlmm_config(table[i], GPIO_CFG_ENABLE);
+                if (rc) {
+                        pr_err("%s not able to get gpio\n", __func__);
+                        for (i--; i >= 0; i--)
+                                gpio_tlmm_config(camera_off_gpio_table[i],
+                                                        GPIO_CFG_ENABLE);
+                        break;
+                }
+        }
+        return rc;
 }
 
 static struct msm_camera_sensor_info msm_camera_sensor_s5k4e1_data;
@@ -3598,6 +3574,7 @@ static struct platform_device *msm7627a_surf_ffa_devices[] __initdata = {
 	&fsa880_i2c_gpio_device,
 	&msm_device_pmic_leds,
 	&msm_vibrator_device,
+	&msm_adsp_device,
 #ifdef CONFIG_SAMSUNG_JACK
 	&sec_device_jack,
 #endif
@@ -4246,8 +4223,6 @@ static void __init msm7x27a_pm_init(void)
 {
 	msm_pm_set_platform_data(msm7x27a_pm_data,
 			ARRAY_SIZE(msm7x27a_pm_data));
-	BUG_ON(msm_pm_boot_init(&msm_pm_boot_pdata));
-
 	msm_pm_register_irqs();
 }
 
@@ -4316,12 +4291,36 @@ static void msm7x27a_enable_regulators(void)
    return;
 }
 
+static void msm_adsp_add_pdev(void)
+{
+	int rc = 0;
+	struct rpc_board_dev *rpc_adsp_pdev;
+
+	rpc_adsp_pdev = kzalloc(sizeof(struct rpc_board_dev), GFP_KERNEL);
+	if (rpc_adsp_pdev == NULL) {
+		pr_err("%s: Memory Allocation failure\n", __func__);
+		return;
+	}
+	rpc_adsp_pdev->prog = ADSP_RPC_PROG;
+
+	if (cpu_is_msm8625())
+		rpc_adsp_pdev->pdev = msm8625_device_adsp;
+	else
+		rpc_adsp_pdev->pdev = msm_adsp_device;
+	rc = msm_rpc_add_board_dev(rpc_adsp_pdev, 1);
+	if (rc < 0) {
+		pr_err("%s: return val: %d\n",	__func__, rc);
+		kfree(rpc_adsp_pdev);
+	}
+}
+
 static void __init msm7x2x_init(void)
 {
     msm7x2x_misc_init();
 
 	/* Initialize the regulators */
 	msm7x27a_init_regulators();
+	msm_adsp_add_pdev();
 
 	/* Enable the Required regulators */
     msm7x27a_enable_regulators();
@@ -4352,8 +4351,6 @@ static void __init msm7x2x_init(void)
 	msm_fb_add_devices();
 	msm7x2x_init_host();
 	msm7x27a_pm_init();
-
-	BUG_ON(msm_pm_boot_init(&msm_pm_boot_pdata));
 
 #if defined(CONFIG_I2C) && defined(CONFIG_GPIO_SX150X)
 	register_i2c_devices();
@@ -4396,8 +4393,8 @@ static void __init msm7x2x_init(void)
 	if (machine_is_msm7x27a_ffa() || machine_is_msm7625a_ffa())
 		msm_init_pmic_vibrator();
 #endif
-       /*7x25a kgsl initializations*/
-       msm7x25a_kgsl_3d0_init();
+    /*7x25a kgsl initializations*/
+    msm7x25a_kgsl_3d0_init();
 
 #if defined(CONFIG_PN544)
 	config_gpio_table_for_nfc();
