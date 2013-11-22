@@ -1039,4 +1039,7 @@ int mdp4_unmap_sec_resource(struct msm_fb_data_type *mfd);
 #else
 static inline void mdp4_unmap_sec_resource(struct msm_fb_data_type *mfd);
 #endif
+int mdp4_update_base_blend(struct msm_fb_data_type *mfd,
+        struct mdp_blend_cfg *mdp_blend_cfg);
+u32 mdp4_get_mixer_num(u32 panel_type);
 #endif /* MDP_H */
