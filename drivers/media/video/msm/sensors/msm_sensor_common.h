@@ -82,6 +82,7 @@ struct msm_camera_power_seq_t {
 struct msm_sensor_id_info_t {
 	uint16_t sensor_id_reg_addr;
 	uint16_t sensor_id;
+	uint16_t sensor_version;
 };
 
 struct msm_sensor_reg_t {
@@ -129,6 +130,8 @@ struct msm_sensor_v4l2_ctrl_info_t {
 struct msm_sensor_fn_t {
 	void (*sensor_start_stream) (struct msm_sensor_ctrl_t *);
 	void (*sensor_stop_stream) (struct msm_sensor_ctrl_t *);
+	void (*sensor_preview_mode) (struct msm_sensor_ctrl_t *);
+	void (*sensor_capture_mode) (struct msm_sensor_ctrl_t *);
 	void (*sensor_group_hold_on) (struct msm_sensor_ctrl_t *);
 	void (*sensor_group_hold_off) (struct msm_sensor_ctrl_t *);
 
@@ -209,6 +212,10 @@ struct msm_sensor_ctrl_t {
 	enum msm_sensor_cam_mode_t cam_mode;
 
 	struct mutex *msm_sensor_mutex;
+        struct msm_camera_csi2_params *curr_csi_params;
+        struct msm_camera_csi2_params **csi_params;
+        struct msm_camera_csi_params **csic_params;
+        struct msm_camera_csi_params *curr_csic_params;
 
 	struct v4l2_subdev sensor_v4l2_subdev;
 	struct v4l2_subdev_info *sensor_v4l2_subdev_info;

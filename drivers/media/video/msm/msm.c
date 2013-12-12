@@ -39,6 +39,12 @@ static int vnode_count;
 module_param(msm_camera_v4l2_nr, uint, 0644);
 MODULE_PARM_DESC(msm_camera_v4l2_nr, "videoX start number, -1 is autodetect");
 
+int msm_camera_antibanding =  CAMERA_ANTIBANDING_50HZ; /*default*/
+
+int msm_camera_antibanding_get (void) {
+        return msm_camera_antibanding;
+}
+
 /* callback function from all subdevices of a msm_cam_v4l2_device */
 static void msm_cam_v4l2_subdev_notify(struct v4l2_subdev *sd,
 				unsigned int notification, void *arg)
