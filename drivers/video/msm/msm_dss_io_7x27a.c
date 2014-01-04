@@ -363,6 +363,7 @@ void mipi_dsi_unprepare_clocks(void)
 	clk_unprepare(dsi_pixel_clk);
 }
 
+
 void mipi_dsi_ahb_ctrl(u32 enable)
 {
 	static int ahb_ctrl_done;
@@ -386,6 +387,7 @@ void mipi_dsi_ahb_ctrl(u32 enable)
 		ahb_ctrl_done = 0;
 	}
 }
+
 
 void mipi_dsi_clk_enable(void)
 {
