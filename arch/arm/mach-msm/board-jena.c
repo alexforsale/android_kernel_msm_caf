@@ -48,6 +48,7 @@
 #include <linux/smsc911x.h>
 #include <linux/msm_adc.h>
 #include <linux/msm_ion.h>
+#include <media/msm_camera.h>
 #include "devices.h"
 #include "timer.h"
 #include "board-msm7x27a-regulator.h"
