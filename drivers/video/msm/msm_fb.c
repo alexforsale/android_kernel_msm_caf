@@ -484,13 +484,17 @@ static int msm_fb_probe(struct platform_device *pdev)
 		char timeline_name[MAX_TIMELINE_NAME_LEN];
 		snprintf(timeline_name, sizeof(timeline_name),
 			"mdp_fb_%d", mfd->index);
+#ifdef CONFIG_SYNC
 		mfd->timeline = sw_sync_timeline_create(timeline_name);
 		if (mfd->timeline == NULL) {
 			pr_err("%s: cannot create time line", __func__);
 			return -ENOMEM;
 		} else {
+#endif
 			mfd->timeline_value = 0;
+#ifdef CONFIG_SYNC
 		}
+#endif
 	}
 
 
@@ -993,7 +997,9 @@ static int msm_fb_blank_sub(int blank_mode, struct fb_info *info,
 			if (ret)
 				mfd->panel_power_on = curr_pwr_state;
 
+#ifdef CONFIG_SYNC
 			msm_fb_release_timeline(mfd);
+#endif
 			mfd->op_enable = TRUE;
 		}
 		break;
@@ -1852,6 +1858,7 @@ static int msm_fb_release(struct fb_info *info, int user)
 	return ret;
 }
 
+#ifdef CONFIG_SYNC
 void msm_fb_wait_for_fence(struct msm_fb_data_type *mfd)
 {
 	int i, ret = 0;
@@ -1881,6 +1888,7 @@ void msm_fb_wait_for_fence(struct msm_fb_data_type *mfd)
 	}
 	mfd->acq_fen_cnt = 0;
 }
+
 int msm_fb_signal_timeline(struct msm_fb_data_type *mfd)
 {
 	mutex_lock(&mfd->sync_mutex);
@@ -1916,7 +1924,7 @@ void msm_fb_release_timeline(struct msm_fb_data_type *mfd)
 	atomic_set(&mfd->commit_cnt, 0);
 	mutex_unlock(&mfd->sync_mutex);
 }
-
+#endif
 DEFINE_SEMAPHORE(msm_fb_pan_sem);
 static int msm_fb_commit_idle(struct msm_fb_data_type *mfd,
 	u32 cmd, u32 max_commit_cnt)
@@ -2172,14 +2180,28 @@ static int msm_fb_pan_display_sub(struct fb_var_screeninfo *var,
 	mutex_unlock(&msm_fb_notify_update_sem);
 
 	down(&msm_fb_pan_sem);
+#ifdef CONFIG_SYNC
 	msm_fb_wait_for_fence(mfd);
+#endif
+	if (info->node == 0 && !(mfd->cont_splash_done)) { /* primary */
+		mdp_set_dma_pan_info(info, NULL, TRUE);
+		if (msm_fb_blank_sub(FB_BLANK_UNBLANK, info, mfd->op_enable)) {
+			pr_err("%s: can't turn on display!\n", __func__);
+#ifdef CONFIG_SYNC
+			msm_fb_release_timeline(mfd);
+#endif
+			return -EINVAL;
+		}
+	}
 
 	mdp_set_dma_pan_info(info, dirtyPtr,
 			     (var->activate & FB_ACTIVATE_VBL));
 	/* async call */
 
 	mdp_dma_pan_update(info);
+#ifdef CONFIG_SYNC
 	msm_fb_signal_timeline(mfd);
+#endif
 #ifdef CONFIG_FB_MSM_MDP40
 	if (mdp4_unmap_sec_resource(mfd))
 		pr_err("%s: unmap secure res failed\n", __func__);
@@ -3784,6 +3806,7 @@ static int msmfb_handle_pp_ioctl(struct msm_fb_data_type *mfd,
 	return ret;
 }
 
+#ifdef CONFIG_SYNC
 static int msmfb_handle_buf_sync_ioctl(struct msm_fb_data_type *mfd,
 						struct mdp_buf_sync *buf_sync)
 {
@@ -3877,6 +3900,7 @@ buf_sync_err_1:
 	mutex_unlock(&mfd->sync_mutex);
 	return ret;
 }
+#endif
 
 static int msmfb_display_commit(struct fb_info *info,
 						unsigned long *argp)
@@ -4246,18 +4270,7 @@ static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
 		if (ret == 1)
 			ret = copy_to_user(argp, &mdp_pp, sizeof(mdp_pp));
 		break;
-
-	case MSMFB_EXTERNAL_MUTE:
-		ret = copy_from_user(&avmute, argp, sizeof(avmute));
-		if (ret) {
-			MSM_FB_ERR("%s: AVMUTE IOCTL call failed! %d\n",
-								__func__, ret);
-			return ret;
-		}
-
-		pdata->dtv_avmute(mfd->pdev, avmute);
-		break;
-
+#ifdef CONFIG_SYNC
 	case MSMFB_BUFFER_SYNC:
 		ret = copy_from_user(&buf_sync, argp, sizeof(buf_sync));
 		if (ret)
@@ -4268,7 +4281,7 @@ static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
 		if (!ret)
 			ret = copy_to_user(argp, &buf_sync, sizeof(buf_sync));
 		break;
-
+#endif
 	case MSMFB_DISPLAY_COMMIT:
 		ret = msmfb_display_commit(info, argp);
 		break;
