@@ -1963,7 +1963,9 @@ static int msm_fb_commit_idle(struct msm_fb_data_type *mfd,
 		if (ret <= 0) {
 			complete_all(&mfd->fence_comp);
 			mutex_unlock(&mfd->sync_mutex);
+#ifdef CONFIG_SYNC
 			msm_fb_release_timeline(mfd);
+#endif
 			return ret;
 		}
 	}
