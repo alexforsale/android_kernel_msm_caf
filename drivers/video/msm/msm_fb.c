@@ -3960,7 +3960,6 @@ static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
 			unsigned long arg)
 {
 	struct msm_fb_data_type *mfd = (struct msm_fb_data_type *)info->par;
-	struct msm_fb_panel_data *pdata = NULL;
 	void __user *argp = (void __user *)arg;
 	struct fb_cursor cursor;
 	struct fb_cmap cmap;
@@ -3978,7 +3977,6 @@ static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
 	struct msmfb_metadata mdp_metadata;
 	int ret = 0;
 	unsigned int avmute = 0;
-	pdata = (struct msm_fb_panel_data *)mfd->pdev->dev.platform_data;
 	msm_fb_commit_idle(mfd, cmd, 1);
 
         if (!info || !(info->par))
