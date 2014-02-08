@@ -69,9 +69,10 @@ int mdp_iommu_split_domain;
 
 u32 mdp_max_clk = 266667000;   /* Max MDP Clk */
 u64 mdp_max_bw = 0xFFFFFFFFUL; /* Max BW Possible */
+#ifdef CONFIG_FB_MSM_MDP40
 u32 mdp_bw_ab_factor = MDP4_BW_AB_DEFAULT_FACTOR;
 u32 mdp_bw_ib_factor = MDP4_BW_IB_DEFAULT_FACTOR;
-
+#endif
 static struct platform_device *mdp_init_pdev;
 static struct regulator *footswitch, *dsi_pll_vdda, *dsi_pll_vddio;
 static unsigned int mdp_footswitch_on;
@@ -1650,6 +1651,7 @@ void mdp_disable_irq_nosync(uint32 term)
 	spin_unlock(&mdp_lock);
 }
 
+#ifdef CONFIG_FB_MSM_MDP40
 void mdp_pipe_kickoff_simplified(uint32 term)
 {
 	if (term == MDP_OVERLAY0_TERM) {
@@ -1658,6 +1660,7 @@ void mdp_pipe_kickoff_simplified(uint32 term)
 		outpdw(MDP_BASE + 0x0004, 0);
 	}
 }
+#endif
 
 void mdp_pipe_kickoff(uint32 term, struct msm_fb_data_type *mfd)
 {
@@ -2363,9 +2366,10 @@ static int mdp_off(struct platform_device *pdev)
 			mfd->panel.type == LCDC_PANEL ||
 			mfd->panel.type == LVDS_PANEL)
 		mdp4_lcdc_off(pdev);
+#ifdef CONFIG_FB_MSM_WRITEBACK_MSM_PANEL
 	else if (mfd->panel.type == WRITEBACK_PANEL)
 		mdp4_overlay_writeback_off(pdev);
-
+#endif
 	mdp_pipe_ctrl(MDP_CMD_BLOCK, MDP_BLOCK_POWER_ON, FALSE);
 	ret = panel_next_off(pdev);
 	mdp_pipe_ctrl(MDP_CMD_BLOCK, MDP_BLOCK_POWER_OFF, FALSE);
@@ -2397,7 +2401,7 @@ static int mdp_on(struct platform_device *pdev)
 	mfd = platform_get_drvdata(pdev);
 
 	pr_debug("%s:+\n", __func__);
-
+#ifdef CONFIG_FB_MSM_WRITEBACK_MSM_PANEL
 	if (!(mfd->cont_splash_done)) {
 		if (mfd->panel.type == MIPI_VIDEO_PANEL)
 			mdp4_dsi_video_splash_done();
@@ -2407,7 +2411,7 @@ static int mdp_on(struct platform_device *pdev)
 		mdp_clk_ctrl(0);
 		mfd->cont_splash_done = 1;
 	}
-
+#endif
 	mdp_pipe_ctrl(MDP_CMD_BLOCK, MDP_BLOCK_POWER_ON, FALSE);
 
 	ret = panel_next_on(pdev);
@@ -2432,7 +2436,9 @@ static int mdp_on(struct platform_device *pdev)
 		}
 
 		mdp_clk_ctrl(0);
+#ifdef CONFIG_FB_MSM_WRITEBACK_MSM_PANEL
 		mdp4_overlay_reset(mfd);
+#endif
 		mdp_pipe_ctrl(MDP_CMD_BLOCK, MDP_BLOCK_POWER_OFF, FALSE);
 	}
 
@@ -2811,11 +2817,12 @@ static int mdp_probe(struct platform_device *pdev)
 
 		if (mdp_pdata->mdp_max_bw)
 			mdp_max_bw = mdp_pdata->mdp_max_bw;
+#ifdef CONFIG_FB_MSM_MDP40
 		if (mdp_pdata->mdp_bw_ab_factor)
 			mdp_bw_ab_factor = mdp_pdata->mdp_bw_ab_factor;
 		if (mdp_pdata->mdp_bw_ib_factor)
 			mdp_bw_ib_factor = mdp_pdata->mdp_bw_ib_factor;
-
+#endif
 		mdp_rev = mdp_pdata->mdp_rev;
 
 		mdp_iommu_split_domain = mdp_pdata->mdp_iommu_split_domain;
@@ -2832,7 +2839,7 @@ static int mdp_probe(struct platform_device *pdev)
 		if (!(mdp_pdata->cont_splash_enabled))
 			mdp4_hw_init(1);
 #else
-		mdp_hw_init(1);
+		mdp_hw_init();
 #endif
 
 #ifdef CONFIG_FB_MSM_OVERLAY
