@@ -662,16 +662,6 @@ adreno_ringbuffer_addcmds(struct adreno_ringbuffer *rb,
 		GSL_RB_WRITE(ringcmds, rcmd_gpu, 0x00);
 	}
 
-	/* HW Workaround for MMU Page fault
-	* due to memory getting free early before
-	* GPU completes it.
-	*/
-	if (adreno_is_a2xx(adreno_dev)) {
-		GSL_RB_WRITE(ringcmds, rcmd_gpu,
-			cp_type3_packet(CP_WAIT_FOR_IDLE, 1));
-		GSL_RB_WRITE(ringcmds, rcmd_gpu, 0x00);
-	}
-
 	if (adreno_is_a3xx(adreno_dev)) {
 		/*
 		 * Flush HLSQ lazy updates to make sure there are no
