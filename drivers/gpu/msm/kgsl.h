@@ -261,10 +261,6 @@ static inline int kgsl_gpuaddr_in_memdesc(const struct kgsl_memdesc *memdesc,
 	if (!size)
 		size = 1;
 
-	/* don't overflow */
-	if (size > UINT_MAX - gpuaddr)
-		return 0;
-
 	if (gpuaddr >= memdesc->gpuaddr &&
 	    ((gpuaddr + size) <= (memdesc->gpuaddr + memdesc->size))) {
 		return 1;

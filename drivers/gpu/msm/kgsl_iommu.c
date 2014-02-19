@@ -1568,9 +1568,6 @@ kgsl_iommu_unmap(void *mmu_specific_pt,
 	if (range == 0 || gpuaddr == 0)
 		return 0;
 
-	if (kgsl_memdesc_has_guard_page(memdesc))
-		range += PAGE_SIZE;
-
 	ret = iommu_unmap_range(iommu_pt->domain, gpuaddr, range);
 	if (ret)
 		KGSL_CORE_ERR("iommu_unmap_range(%p, %x, %d) failed "
@@ -1608,21 +1605,6 @@ kgsl_iommu_map(void *mmu_specific_pt,
 			iommu_pt->domain, iommu_virt_addr, memdesc->sg, size,
 			protflags, ret);
 		return ret;
-	}
-	if (kgsl_memdesc_has_guard_page(memdesc)) {
-		ret = iommu_map(iommu_pt->domain, iommu_virt_addr + size,
-				page_to_phys(kgsl_guard_page), PAGE_SIZE,
-				protflags & ~IOMMU_WRITE);
-		if (ret) {
-			KGSL_CORE_ERR("iommu_map(%p, %x, %x, %x) err: %d\n",
-				iommu_pt->domain, iommu_virt_addr + size,
-				page_to_phys(kgsl_guard_page),
-				protflags & ~IOMMU_WRITE,
-				ret);
-			/* cleanup the partial mapping */
-			iommu_unmap_range(iommu_pt->domain, iommu_virt_addr,
-					  size);
-		}
 	}
 	return ret;
 }
